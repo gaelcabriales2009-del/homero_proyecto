@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
+import { markAttendance } from '../services/api';
 
-export default function Evidencias({ alumnosAsignadosHoy, onUpdateStudent }) {
+export default function Evidencias({ alumnosAsignadosHoy, onUpdateStudent, session }) {
   const todayStr = new Date().toISOString().split('T')[0];
   const dateObj = new Date(todayStr + "T00:00:00");
   const formattedDate = dateObj.toLocaleDateString('es-ES', { 
@@ -41,37 +42,58 @@ export default function Evidencias({ alumnosAsignadosHoy, onUpdateStudent }) {
       reader.onloadend = () => {
         // Al completar la lectura, actualiza el estado del alumno con la imagen en Base64
         onUpdateStudent(studentId, { fotoEvidencia: reader.result });
-        
-        // Restaura la opacidad y muestra un mensaje de confirmación
-        if (cardInner) {
-          cardInner.style.opacity = '1';
-        }
-        alert("¡Evidencia de foto cargada correctamente! Tu reporte está completo.");
-      };
-      
-      // Manejo de errores en la lectura del archivo
-      reader.onerror = () => {
-        if (cardInner) {
-          cardInner.style.opacity = '1';
-        }
-        alert("Hubo un error al intentar leer la imagen. Por favor, inténtalo de nuevo.");
-      };
+        syncToBackend(studentId, { fotoEvidencia: reader.result });
+        
+        // Restaura la opacidad y muestra un mensaje de confirmación
+        if (cardInner) {
+          cardInner.style.opacity = '1';
+        }
+        alert("¡Evidencia de foto cargada correctamente! Tu reporte está completo.");
+      };
+      
+      // Manejo de errores en la lectura del archivo
+      reader.onerror = () => {
+        if (cardInner) {
+          cardInner.style.opacity = '1';
+        }
+        alert("Hubo un error al intentar leer la imagen. Por favor, inténtalo de nuevo.");
+      };
 
-      reader.readAsDataURL(file);
-    }
-  };
+      reader.readAsDataURL(file);
+    }
+  };
 
-  return (
-    <div className="reports-screen evidencias-page-container">
-      
-      {/* Banner Principal - Zona de Auto-Reporte */}
-      <div className="welcome-section evidences-banner" style={{
-        background: 'var(--clean-bg-gradient)',
-        padding: '24px 30px',
-        borderRadius: 'var(--radius-lg)',
-        color: 'white',
-        boxShadow: 'var(--shadow-premium)',
-        flexDirection: 'column',
+  // Función para sincronizar asistencia con el backend
+  const syncToBackend = async (studentId, updatedFields) => {
+    if (!session || !session.token) return;
+
+    try {
+      const student = alumnosAsignadosHoy.find(s => s.id === studentId);
+      if (!student) return;
+
+      const actividades = Object.keys(tareasCheck)
+        .filter(key => key.startsWith(`${studentId}-`))
+        .map(key => {
+          const tareaId = key.split('-')[1];
+          const tarea = TAREAS_LIMPIEZA.find(t => t.id === tareaId);
+          return {
+            tarea: tarea?.texto || '',
+            completada: tareasCheck[key]
+          };
+        });
+
+      const attendanceData = {
+        estudianteId: student.id.toString(),
+        fecha: todayStr,
+        status: updatedFields.status || student.status || 'Pendiente',
+        equipoLimpieza: student.equipoLimpieza || 'NINGUNO',
+        actividades,
+        fotoEvidencia: updatedFields.fotoEvidencia || student.fotoEvidencia || undefined
+      };
+
+      await markAttendance(session.token, attendanceData);
+    } catch (error) {
+      console.error('Error sincronizando con backend:', error);
         alignItems: 'flex-start',
         gap: '6px'
       }}>

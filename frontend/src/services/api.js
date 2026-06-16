@@ -28,3 +28,42 @@ export const getReportStats = async (token) => {
   }
   return data;
 };
+
+export const markAttendance = async (token, attendanceData) => {
+  const response = await fetch(`${API_BASE_URL}/attendance/mark`, {
+    method: 'POST',
+    headers: getHeaders(token),
+    body: JSON.stringify(attendanceData),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.msg || 'Error al registrar asistencia.');
+  }
+  return data;
+};
+
+export const getGroupAttendance = async (token, fecha) => {
+  const url = fecha ? `${API_BASE_URL}/attendance/group?fecha=${fecha}` : `${API_BASE_URL}/attendance/group`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getHeaders(token),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.msg || 'Error al obtener asistencia del grupo.');
+  }
+  return data;
+};
+
+export const getAttendanceStats = async (token, fecha) => {
+  const url = fecha ? `${API_BASE_URL}/attendance/stats?fecha=${fecha}` : `${API_BASE_URL}/attendance/stats`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: getHeaders(token),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.msg || 'Error al obtener estadísticas de asistencia.');
+  }
+  return data;
+};

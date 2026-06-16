@@ -341,6 +341,7 @@ function App() {
           <Evidencias 
             alumnosAsignadosHoy={alumnosAsignadosHoy}
             onUpdateStudent={handleUpdateStudent}
+            session={session}
           />
         )}
         
